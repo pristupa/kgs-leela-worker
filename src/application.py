@@ -45,7 +45,7 @@ class Application:
         try:
             game_id = data['game_id']
             if not isinstance(game_id, int):
-                raise ValueError()
+                raise ValueError(f'Invalid game_id: {game_id}')
         except (KeyError, ValueError):
             print('[Warning] Ignoring message, cannot find an integer "game_id":', body)
             channel.basic_ack(delivery_tag=method.delivery_tag)
@@ -54,8 +54,9 @@ class Application:
         try:
             self._leela_worker.calculate_game(game_id)
             channel.basic_ack(delivery_tag=method.delivery_tag)
-        except Exception as exception:
+        except FileNotFoundError as exception:
             print('[Error]', exception)
+            channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def _on_connected(self, connection):
         """Called when we are fully connected to RabbitMQ"""
