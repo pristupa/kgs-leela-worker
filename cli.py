@@ -1,5 +1,7 @@
 import click
 
+from src.worker import Worker
+
 
 @click.group()
 def cli():
@@ -8,7 +10,8 @@ def cli():
 
 @cli.command()
 def start():
-    print('To be implemented...')
+    worker = Worker()
+    worker.start()
 
 
 if __name__ == '__main__':
