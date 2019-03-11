@@ -1,6 +1,6 @@
 import click
 
-from src.worker import Worker
+from src.application import Application
 
 
 @click.group()
@@ -10,8 +10,8 @@ def cli():
 
 @cli.command()
 def start():
-    worker = Worker()
-    worker.start()
+    application = Application()
+    application.start()
 
 
 if __name__ == '__main__':

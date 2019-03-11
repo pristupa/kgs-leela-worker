@@ -2,13 +2,9 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    amqp_host = 'localhost'
-    amqp_user = 'kgs'
-    amqp_password = 'kgs'
-    db_host = 'localhost'
-    db_name = 'kgs'
-    db_user = 'kgs'
-    db_password = 'kgs'
+    amqp_url = 'amqp://kgs:kgs@localhost/kgs'
+    amqp_queue = 'kgs'
+    db_url = 'postgresql://kgs:kgs@localhost/kgs'
 
     class Config:
         env_prefix = 'KGS_LEELA_'
