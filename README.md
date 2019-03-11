@@ -10,5 +10,5 @@ $ pip install .
 
 ## Usage
 ```shell
-$ python cli.py start
+$ KGS_LEELA_AMQP_URL=amqp://kgs:kgs@localhost/kgs python cli.py start
 ```
