@@ -5,6 +5,10 @@ from .logger import logger
 from .settings import settings
 
 
+class GameNotFoundError(Exception):
+    pass
+
+
 class LeelaWorker:
 
     def __init__(self, db_connection):
@@ -42,6 +46,8 @@ class LeelaWorker:
         with self._db_connection as connection:
             with connection.cursor() as cursor:
                 cursor.execute('SELECT sgf_content FROM games WHERE id=%s', (game_id,))
+                if cursor.rowcount == 0:
+                    raise GameNotFoundError()
                 sgf_content, = cursor.fetchone()
         file_descriptor, filepath = tempfile.mkstemp('.sgf')
         with open(file_descriptor, 'wb') as file:

@@ -6,6 +6,7 @@ import pika.amqp_object
 import pika.channel
 
 from .database import Database
+from .leela_worker import GameNotFoundError
 from .leela_worker import LeelaWorker
 from .logger import logger
 from .settings import settings
@@ -62,8 +63,13 @@ class Application:
             channel.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        self._leela_worker.calculate_game(game_id)
-        channel.basic_ack(delivery_tag=method.delivery_tag)
+        try:
+            self._leela_worker.calculate_game(game_id)
+            channel.basic_ack(delivery_tag=method.delivery_tag)
+        except GameNotFoundError:
+            logger.error(f'Ignoring message, game not found: {game_id}')
+            channel.basic_ack(delivery_tag=method.delivery_tag)
+            return
 
     def _on_connected(self, connection):
         """Called when we are fully connected to RabbitMQ"""
