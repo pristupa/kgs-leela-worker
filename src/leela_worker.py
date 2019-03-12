@@ -31,7 +31,7 @@ class LeelaWorker:
             raise FileNotFoundError(f'File {filename} not found in {settings.sgf_dir}')
         return filepath
 
-    def _save_result(self, game_id, result_filepath: str):
+    def _save_result(self, game_id: int, result_filepath: str):
         with open(result_filepath, 'rb') as result_file:
             result = result_file.read()
         with self._db_connection as connection:
