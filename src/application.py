@@ -6,26 +6,29 @@ import pika.channel
 
 from .settings import settings
 from .leela_worker import LeelaWorker
+from .database import Database
+from .logger import logger
 
 
 class Application:
 
     def __init__(self):
         parameters = pika.URLParameters(settings.amqp_url)
-        self._queue = settings.amqp_queue
-        self._channel = None
-        self._connection = pika.SelectConnection(parameters, self._on_connected)
-        self._leela_worker = LeelaWorker()
+        self._amqp_channel = None
+        self._amqp_connection = pika.SelectConnection(parameters, self._on_connected)
+        self._database = Database()
+        self._leela_worker = LeelaWorker(self._database.connection)
 
     def start(self):
         try:
             # Loop so we can communicate with RabbitMQ
-            self._connection.ioloop.start()
+            self._amqp_connection.ioloop.start()
         except KeyboardInterrupt:
-            # Gracefully close the connection
-            self._connection.close()
+            # Gracefully close the connections
+            self._database.close()
+            self._amqp_connection.close()
             # Loop until we're fully closed, will stop on its own
-            self._connection.ioloop.start()
+            self._amqp_connection.ioloop.start()
 
     def _handle_delivery(
             self,
@@ -38,7 +41,7 @@ class Application:
         try:
             data = json.loads(body)
         except json.decoder.JSONDecodeError:
-            print('[Warning] Ignoring message with invalid JSON:', body)
+            logger.warn(f'Ignoring message with invalid JSON: {body}')
             channel.basic_ack(delivery_tag=method.delivery_tag)
             return
 
@@ -47,7 +50,7 @@ class Application:
             if not isinstance(game_id, int):
                 raise ValueError(f'Invalid game_id: {game_id}')
         except (KeyError, ValueError):
-            print('[Warning] Ignoring message, cannot find an integer "game_id":', body)
+            logger.warn(f'Ignoring message, cannot find an integer "game_id": {body}')
             channel.basic_ack(delivery_tag=method.delivery_tag)
             return
 
@@ -55,7 +58,7 @@ class Application:
             self._leela_worker.calculate_game(game_id)
             channel.basic_ack(delivery_tag=method.delivery_tag)
         except FileNotFoundError as exception:
-            print('[Error]', exception)
+            logger.error(f'{exception}')
             channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def _on_connected(self, connection):
@@ -65,9 +68,9 @@ class Application:
 
     def _on_channel_open(self, new_channel):
         """Called when our channel has opened"""
-        self._channel = new_channel
-        self._channel.queue_declare(
-            queue=self._queue,
+        self._amqp_channel = new_channel
+        self._amqp_channel.queue_declare(
+            queue=settings.amqp_queue,
             durable=True,
             exclusive=False,
             auto_delete=False,
@@ -76,4 +79,4 @@ class Application:
 
     def _on_queue_declared(self, frame):
         """Called when RabbitMQ has told us our Queue has been declared, frame is the response from RabbitMQ"""
-        self._channel.basic_consume(self._handle_delivery, queue=self._queue)
+        self._amqp_channel.basic_consume(self._handle_delivery, queue=settings.amqp_queue)
