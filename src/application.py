@@ -1,16 +1,14 @@
 import json
-import os
-import sys
 import time
 
 import pika
 import pika.amqp_object
 import pika.channel
 
-from .settings import settings
-from .leela_worker import LeelaWorker
 from .database import Database
+from .leela_worker import LeelaWorker
 from .logger import logger
+from .settings import settings
 
 
 class Application:
@@ -64,12 +62,8 @@ class Application:
             channel.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        try:
-            self._leela_worker.calculate_game(game_id)
-            channel.basic_ack(delivery_tag=method.delivery_tag)
-        except FileNotFoundError as exception:
-            logger.error(f'{exception}')
-            channel.basic_ack(delivery_tag=method.delivery_tag)
+        self._leela_worker.calculate_game(game_id)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def _on_connected(self, connection):
         """Called when we are fully connected to RabbitMQ"""
