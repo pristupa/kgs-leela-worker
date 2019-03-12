@@ -21,9 +21,11 @@ class Application:
 
     def start(self):
         try:
+            logger.info('Listening the queue...')
             # Loop so we can communicate with RabbitMQ
             self._amqp_connection.ioloop.start()
         except KeyboardInterrupt:
+            logger.info('Gracefully closing connections...')
             # Gracefully close the connections
             self._database.close()
             self._amqp_connection.close()
