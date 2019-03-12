@@ -105,6 +105,3 @@ venv.bak/
 
 # IDE
 .idea/
-
-# SGF files
-sgf/*.sgf

@@ -1,7 +1,8 @@
-import os.path
+import os
+import tempfile
 
-from .settings import settings
 from .logger import logger
+from .settings import settings
 
 
 class LeelaWorker:
@@ -11,29 +12,43 @@ class LeelaWorker:
 
     def calculate_game(self, game_id: int):
         input_filepath = self._get_input_filepath(game_id)
-        result_filepath = self._run_leela(game_id, input_filepath)
-        self._save_result(game_id, result_filepath)
+        result = self._run_leela(game_id, input_filepath)
+        self._save_result(game_id, result)
 
-    def _run_leela(self, game_id: int, filepath: str) -> str:
+    def _run_leela(self, game_id: int, filepath: str) -> bytes:
         """
         :param game_id: Id of the game
-        :param filepath: Path of a file for Leela to analyze
-        :return: Path of the Leela output file
+        :param filepath: Path of a file for Leela to analyze (it's going to be deleted afterwards)
+        :return: The contents of the Leela output file
         """
         logger.info(f'Running game id={game_id} from {filepath} with {settings.playouts} playouts')
-        raise NotImplementedError('Run Leela command is not implemented')  # TODO: Remove this line
-        return filepath  # TODO: Replace with the output file path
+        result_filepath = '/path/to/leela/result.sgf'  # TODO: Replace with the output file path
 
-    def _get_input_filepath(self, game_id: int) -> str:
-        filename = f'kgs-crawler-{game_id}.sgf'
-        filepath = os.path.join(settings.sgf_dir, filename)
-        if not os.path.isfile(filepath):
-            raise FileNotFoundError(f'File {filename} not found in {settings.sgf_dir}')
-        return filepath
+        raise NotImplementedError('Run Leela is not implemented')  # TODO: Replace this line with the actual Leela run
 
-    def _save_result(self, game_id: int, result_filepath: str):
         with open(result_filepath, 'rb') as result_file:
             result = result_file.read()
+        os.unlink(filepath)
+        os.unlink(result_filepath)
+
+        return result
+
+    def _get_input_filepath(self, game_id: int) -> str:
+        """
+        Generates an SGF file with the game provided within the temp directory
+        :param game_id: Id of the game
+        :return: the absolute pathname of the created file
+        """
+        with self._db_connection as connection:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT sgf_content FROM games WHERE id=%s', (game_id,))
+                sgf_content, = cursor.fetchone()
+        file_descriptor, filepath = tempfile.mkstemp('.sgf')
+        with open(file_descriptor, 'wb') as file:
+            file.write(sgf_content)
+        return filepath
+
+    def _save_result(self, game_id: int, result: bytes):
         with self._db_connection as connection:
             with connection.cursor() as cursor:
                 result_data = {

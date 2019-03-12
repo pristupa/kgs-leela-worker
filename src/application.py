@@ -31,11 +31,14 @@ class Application:
             self._amqp_connection.ioloop.start()
         except KeyboardInterrupt:
             logger.info('Gracefully closing connections...')
-            # Gracefully close the connections
-            self._database.close()
-            self._amqp_connection.close()
-            # Loop until we're fully closed, will stop on its own
-            self._amqp_connection.ioloop.start()
+            try:
+                # Gracefully close the connections
+                self._database.close()
+                self._amqp_connection.close()
+                # Loop until we're fully closed, will stop on its own
+                self._amqp_connection.ioloop.start()
+            except Exception:
+                pass  # Fail silently
 
     def _handle_delivery(
             self,
