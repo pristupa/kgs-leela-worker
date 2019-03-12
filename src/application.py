@@ -1,4 +1,7 @@
 import json
+import os
+import sys
+import time
 
 import pika
 import pika.amqp_object
@@ -21,6 +24,8 @@ class Application:
 
     def start(self):
         try:
+            logger.info(f'Working with {settings.playouts} playouts')
+            time.sleep(3)
             logger.info('Listening the queue...')
             # Loop so we can communicate with RabbitMQ
             self._amqp_connection.ioloop.start()
