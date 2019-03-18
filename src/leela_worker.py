@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import time
 
 from .logger import logger
 from .settings import settings
@@ -17,8 +18,10 @@ class LeelaWorker:
 
     def calculate_game(self, game_id: int):
         input_filepath = self._get_input_filepath(game_id)
+        start_time = time.time()
         result = self._run_leela(game_id, input_filepath)
-        self._save_result(game_id, result)
+        time_spent = time.time() - start_time
+        self._save_result(game_id, result, time_spent)
 
     def _run_leela(self, game_id: int, filepath: str) -> bytes:
         """
@@ -57,7 +60,7 @@ class LeelaWorker:
             file.write(sgf_content)
         return filepath
 
-    def _save_result(self, game_id: int, result: bytes):
+    def _save_result(self, game_id: int, result: bytes, time_spent: float):
         with self._db_connection as connection:
             with connection.cursor() as cursor:
                 result_data = {
@@ -65,6 +68,7 @@ class LeelaWorker:
                     'worker_tag': settings['worker_tag'],
                     'playouts': int(settings['playouts']),
                     'leela_result': result,
+                    'time_spent': time_spent,
                 }
                 fields_names = ','.join(result_data.keys())
                 placeholders = ','.join(['%s'] * len(result_data))

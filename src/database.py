@@ -19,7 +19,8 @@ class Database:
             "game_id INTEGER NOT NULL,"
             "worker_tag TEXT DEFAULT NULL,"
             "playouts INTEGER NOT NULL,"
-            "leela_result BYTEA NOT NULL"
+            "leela_result BYTEA NOT NULL,"
+            "time_spent REAL NOT NULL"
             ")",
         )
         cursor.close()
