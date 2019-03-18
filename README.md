@@ -1,7 +1,7 @@
 # KGS Leela Worker
 
 ## Requirements
-* Python 3.5 or higher
+* Python 3.6 or higher
 
 ## Installation
 ```shell
@@ -9,6 +9,9 @@ $ pip install .
 ```
 
 ## Usage
+Copy src/config.example.ini to src/config.ini and adjust it for your needs.
+
+Then just run:
 ```shell
-$ KGS_LEELA_AMQP_URL=amqp://kgs:kgs@localhost/kgs KGS_LEELA_PLAYOUTS=2000 KGS_LEELA_DB_HOST=localhost KGS_LEELA_DB_PASSWORD=kgs python cli.py start
+$ python cli.py start
 ```
