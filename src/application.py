@@ -70,6 +70,9 @@ class Application:
             logger.error(f'Ignoring message, game not found: {game_id}')
             channel.basic_ack(delivery_tag=method.delivery_tag)
             return
+        except FileNotFoundError as exception:
+            logger.error(f'Leela did not seem to produce any result for game {game_id}: ' + str(exception))
+            return
 
     def _on_connected(self, connection):
         """Called when we are fully connected to RabbitMQ"""

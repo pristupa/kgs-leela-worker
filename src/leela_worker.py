@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tempfile
 
 from .logger import logger
@@ -25,16 +26,17 @@ class LeelaWorker:
         :param filepath: Path of a file for Leela to analyze (it's going to be deleted afterwards)
         :return: The contents of the Leela output file
         """
-        print(type(settings['playouts']))
         logger.info(f"Running game id={game_id} from {filepath} with {settings['playouts']} playouts")
-        result_filepath = '/path/to/leela/result.sgf'  # TODO: Replace with the output file path
+        result_filepath = settings['leela_output_file']
+        leela_command = settings['leela_command'].replace('{INPUT}', filepath).replace('{OUTPUT}', result_filepath)
+        subprocess.run(leela_command, shell=True, stdout=subprocess.PIPE)
 
-        raise NotImplementedError('Run Leela is not implemented')  # TODO: Replace this line with the actual Leela run
-
-        with open(result_filepath, 'rb') as result_file:
-            result = result_file.read()
-        os.unlink(filepath)
-        os.unlink(result_filepath)
+        try:
+            with open(result_filepath, 'rb') as result_file:
+                result = result_file.read()
+            os.unlink(result_filepath)
+        finally:
+            os.unlink(filepath)
 
         return result
 
@@ -61,7 +63,7 @@ class LeelaWorker:
                 result_data = {
                     'game_id': game_id,
                     'worker_tag': settings['worker_tag'],
-                    'playouts': settings['playouts'],
+                    'playouts': int(settings['playouts']),
                     'leela_result': result,
                 }
                 fields_names = ','.join(result_data.keys())
