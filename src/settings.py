@@ -1,20 +1,7 @@
+import configparser
 import os.path
-from pydantic import BaseSettings
 
+_config = configparser.ConfigParser()
+_config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
 
-class Settings(BaseSettings):
-    amqp_url = 'amqp://kgs:kgs@localhost/kgs'
-    amqp_queue = 'kgs'
-    db_host = 'localhost'
-    db_name = 'kgs'
-    db_user = 'kgs'
-    db_password = 'kgs'
-    worker_tag = 'default'
-    playouts = 2000
-    sgf_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'sgf')
-
-    class Config:
-        env_prefix = 'KGS_LEELA_'
-
-
-settings = Settings()
+settings = _config['kgs-leela-worker']

@@ -6,10 +6,10 @@ from .settings import settings
 class Database:
     def __init__(self):
         self.connection = psycopg2.connect(
-            host=settings.db_host,
-            database=settings.db_name,
-            user=settings.db_user,
-            password=settings.db_password,
+            host=settings['db_host'],
+            database=settings['db_name'],
+            user=settings['db_user'],
+            password=settings['db_password'],
         )
         cursor = self.connection.cursor()
         cursor.execute(

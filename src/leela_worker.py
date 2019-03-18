@@ -25,7 +25,7 @@ class LeelaWorker:
         :param filepath: Path of a file for Leela to analyze (it's going to be deleted afterwards)
         :return: The contents of the Leela output file
         """
-        logger.info(f'Running game id={game_id} from {filepath} with {settings.playouts} playouts')
+        logger.info(f"Running game id={game_id} from {filepath} with {settings['playouts']} playouts")
         result_filepath = '/path/to/leela/result.sgf'  # TODO: Replace with the output file path
 
         raise NotImplementedError('Run Leela is not implemented')  # TODO: Replace this line with the actual Leela run
@@ -59,8 +59,8 @@ class LeelaWorker:
             with connection.cursor() as cursor:
                 result_data = {
                     'game_id': game_id,
-                    'worker_tag': settings.worker_tag,
-                    'playouts': settings.playouts,
+                    'worker_tag': settings['worker_tag'],
+                    'playouts': settings['playouts'],
                     'leela_result': result,
                 }
                 fields_names = ','.join(result_data.keys())

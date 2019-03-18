@@ -15,7 +15,7 @@ from .settings import settings
 class Application:
 
     def __init__(self):
-        parameters = pika.URLParameters(settings.amqp_url)
+        parameters = pika.URLParameters(settings['amqp_url'])
         self._amqp_channel = None
         self._amqp_connection = pika.SelectConnection(parameters, self._on_connected)
         self._database = Database()
@@ -23,7 +23,7 @@ class Application:
 
     def start(self):
         try:
-            logger.info(f'Working with {settings.playouts} playouts')
+            logger.info(f"Working with {settings['playouts']} playouts")
             time.sleep(3)
             logger.info('Listening the queue...')
             # Loop so we can communicate with RabbitMQ
@@ -80,7 +80,7 @@ class Application:
         """Called when our channel has opened"""
         self._amqp_channel = new_channel
         self._amqp_channel.queue_declare(
-            queue=settings.amqp_queue,
+            queue=settings['amqp_queue'],
             durable=True,
             exclusive=False,
             auto_delete=False,
@@ -89,4 +89,4 @@ class Application:
 
     def _on_queue_declared(self, frame):
         """Called when RabbitMQ has told us our Queue has been declared, frame is the response from RabbitMQ"""
-        self._amqp_channel.basic_consume(self._handle_delivery, queue=settings.amqp_queue)
+        self._amqp_channel.basic_consume(self._handle_delivery, queue=settings['amqp_queue'])
