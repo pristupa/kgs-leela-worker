@@ -25,6 +25,7 @@ class LeelaWorker:
         :param filepath: Path of a file for Leela to analyze (it's going to be deleted afterwards)
         :return: The contents of the Leela output file
         """
+        print(type(settings['playouts']))
         logger.info(f"Running game id={game_id} from {filepath} with {settings['playouts']} playouts")
         result_filepath = '/path/to/leela/result.sgf'  # TODO: Replace with the output file path
 
