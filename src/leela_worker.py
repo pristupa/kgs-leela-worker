@@ -1,7 +1,11 @@
 import os
+import re
+import shlex
 import subprocess
 import tempfile
 import time
+
+from tqdm import tqdm
 
 from .logger import logger
 from .settings import settings
@@ -12,6 +16,7 @@ class GameNotFoundError(Exception):
 
 
 class LeelaWorker:
+    leela_output_regexp = re.compile(r'(\d+)/(\d+)')
 
     def __init__(self, db_connection):
         self._db_connection = db_connection
@@ -32,7 +37,23 @@ class LeelaWorker:
         logger.info(f"Running game id={game_id} from {filepath} with {settings['playouts']} playouts")
         result_filepath = settings['leela_output_file']
         leela_command = settings['leela_command'].replace('{INPUT}', filepath).replace('{OUTPUT}', result_filepath)
-        subprocess.run(leela_command, shell=True, stdout=subprocess.PIPE)
+
+        with subprocess.Popen(shlex.split(leela_command), stdout=subprocess.PIPE) as process:
+            with tqdm() as progress_bar:
+                while True:
+                    output = process.stdout.readline()
+                    if output == b'' and process.poll() is not None:
+                        break
+                    if output:
+                        try:
+                            output_decoded = output.decode()
+                            regexp_result = self.leela_output_regexp.search(output_decoded)
+                            if regexp_result is not None:
+                                current, total = regexp_result.groups()
+                                progress_bar.update(int(current))
+                                progress_bar.total = int(total)
+                        except Exception as ex:
+                            print(output)
 
         try:
             with open(result_filepath, 'rb') as result_file:

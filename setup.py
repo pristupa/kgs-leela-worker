@@ -11,6 +11,7 @@ setup(
         'pika==0.13.1',
         'psycopg2-binary==2.7.7',
         'configparser==3.7.3',
+        'tqdm==4.31.1',
     ],
     entry_points='''
         [console_scripts]
