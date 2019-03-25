@@ -23,7 +23,7 @@ class Application:
 
     def start(self):
         try:
-            logger.info(f"Working with {settings['playouts']} playouts")
+            logger.info(f"Working with {settings['kilo_playouts']}000 playouts")
             time.sleep(3)
             logger.info('Listening the queue...')
             # Loop so we can communicate with RabbitMQ
@@ -64,7 +64,17 @@ class Application:
             return
 
         try:
-            self._leela_worker.calculate_game(game_id)
+            kilo_playouts = data['kilo_playouts']
+            if not isinstance(kilo_playouts, int):
+                raise ValueError(f'Invalid kilo_playouts: {kilo_playouts}')
+        except (KeyError, ValueError):
+            logger.warn(f"Invalid kilo_playouts ({data.get('kilo_playouts')}), "
+                        f"using default: {settings['kilo_playouts']}")
+            kilo_playouts = int(settings['kilo_playouts'])
+
+        try:
+            self._leela_worker.calculate_game(game_id, kilo_playouts)
+            logger.info(f'Done: game_id={game_id}, playouts={kilo_playouts * 1000}')
             channel.basic_ack(delivery_tag=method.delivery_tag)
         except GameNotFoundError:
             logger.error(f'Ignoring message, game not found: {game_id}')

@@ -21,39 +21,33 @@ class LeelaWorker:
     def __init__(self, db_connection):
         self._db_connection = db_connection
 
-    def calculate_game(self, game_id: int):
+    def calculate_game(self, game_id: int, kilo_playouts: int):
         input_filepath = self._get_input_filepath(game_id)
         start_time = time.time()
-        result = self._run_leela(game_id, input_filepath)
+        result = self._run_leela(game_id, input_filepath, kilo_playouts)
         time_spent = time.time() - start_time
-        self._save_result(game_id, result, time_spent)
+        self._save_result(game_id, result, time_spent, kilo_playouts)
 
-    def _run_leela(self, game_id: int, filepath: str) -> bytes:
+    def _run_leela(self, game_id: int, filepath: str, kilo_playouts: int) -> bytes:
         """
         :param game_id: Id of the game
         :param filepath: Path of a file for Leela to analyze (it's going to be deleted afterwards)
         :return: The contents of the Leela output file
         """
-        logger.info(f"Running game id={game_id} from {filepath} with {settings['playouts']} playouts")
+        playouts = kilo_playouts * 1000
+        logger.info(f"Running game id={game_id} from {filepath} with {playouts} playouts")
         result_filepath = settings['leela_output_file']
-        leela_command = settings['leela_command'].replace('{INPUT}', filepath).replace('{OUTPUT}', result_filepath)
 
-        with subprocess.Popen(shlex.split(leela_command), stdout=subprocess.PIPE) as process:
-            with tqdm() as progress_bar:
-                while True:
-                    output = process.stdout.readline()
-                    if output == b'' and process.poll() is not None:
-                        break
-                    if output:
-                        try:
-                            output_decoded = output.decode()
-                            regexp_result = self.leela_output_regexp.search(output_decoded)
-                            if regexp_result is not None:
-                                current, total = regexp_result.groups()
-                                progress_bar.update(int(current))
-                                progress_bar.total = int(total)
-                        except Exception as ex:
-                            print(output)
+        subprocess.run([
+            settings['python_bin'],
+            settings['python_leela'],
+            '--file', filepath,
+            '--output', result_filepath,
+            '--profiles', f'{kilo_playouts}k',
+            '--verbose', '1',
+            '--force',
+            '--no_append',
+        ])
 
         try:
             with open(result_filepath, 'rb') as result_file:
@@ -81,13 +75,13 @@ class LeelaWorker:
             file.write(sgf_content)
         return filepath
 
-    def _save_result(self, game_id: int, result: bytes, time_spent: float):
+    def _save_result(self, game_id: int, result: bytes, time_spent: float, kilo_playouts: int):
         with self._db_connection as connection:
             with connection.cursor() as cursor:
                 result_data = {
                     'game_id': game_id,
                     'worker_tag': settings['worker_tag'],
-                    'playouts': int(settings['playouts']),
+                    'playouts': kilo_playouts * 1000,
                     'leela_result': result,
                     'time_spent': time_spent,
                 }
