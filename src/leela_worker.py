@@ -1,14 +1,15 @@
 import os
 import re
-import shlex
 import subprocess
 import tempfile
 import time
-
-from tqdm import tqdm
+from typing import TYPE_CHECKING
 
 from .logger import logger
 from .settings import settings
+
+if TYPE_CHECKING:
+    from .database import Database
 
 
 class GameNotFoundError(Exception):
@@ -18,8 +19,8 @@ class GameNotFoundError(Exception):
 class LeelaWorker:
     leela_output_regexp = re.compile(r'(\d+)/(\d+)')
 
-    def __init__(self, db_connection):
-        self._db_connection = db_connection
+    def __init__(self, db: 'Database'):
+        self._db = db
 
     def calculate_game(self, game_id: int, kilo_playouts: int):
         input_filepath = self._get_input_filepath(game_id)
@@ -64,28 +65,24 @@ class LeelaWorker:
         :param game_id: Id of the game
         :return: the absolute pathname of the created file
         """
-        with self._db_connection as connection:
-            with connection.cursor() as cursor:
-                cursor.execute('SELECT sgf_content FROM games WHERE id=%s', (game_id,))
-                if cursor.rowcount == 0:
-                    raise GameNotFoundError()
-                sgf_content, = cursor.fetchone()
+        cursor = self._db.execute('SELECT sgf_content FROM games WHERE id=%s', (game_id,))
+        if cursor.rowcount == 0:
+            raise GameNotFoundError()
+        sgf_content, = cursor.fetchone()
         file_descriptor, filepath = tempfile.mkstemp('.sgf')
         with open(file_descriptor, 'wb') as file:
             file.write(sgf_content)
         return filepath
 
     def _save_result(self, game_id: int, result: bytes, time_spent: float, kilo_playouts: int):
-        with self._db_connection as connection:
-            with connection.cursor() as cursor:
-                result_data = {
-                    'game_id': game_id,
-                    'worker_tag': settings['worker_tag'],
-                    'playouts': kilo_playouts * 1000,
-                    'leela_result': result,
-                    'time_spent': time_spent,
-                }
-                fields_names = ','.join(result_data.keys())
-                placeholders = ','.join(['%s'] * len(result_data))
-                fields_values = list(result_data.values())
-                cursor.execute(f'INSERT INTO leela_results ({fields_names}) VALUES ({placeholders})', fields_values)
+        result_data = {
+            'game_id': game_id,
+            'worker_tag': settings['worker_tag'],
+            'playouts': kilo_playouts * 1000,
+            'leela_result': result,
+            'time_spent': time_spent,
+        }
+        fields_names = ','.join(result_data.keys())
+        placeholders = ','.join(['%s'] * len(result_data))
+        fields_values = list(result_data.values())
+        self._db.execute(f'INSERT INTO leela_results ({fields_names}) VALUES ({placeholders})', fields_values)

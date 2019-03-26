@@ -5,14 +5,14 @@ from .settings import settings
 
 class Database:
     def __init__(self):
-        self.connection = psycopg2.connect(
+        self._connection = psycopg2.connect(
             host=settings['db_host'],
             database=settings['db_name'],
             user=settings['db_user'],
             password=settings['db_password'],
         )
-        cursor = self.connection.cursor()
-        cursor.execute(
+        self._cursor = self._connection.cursor()
+        self._cursor.execute(
             "CREATE TABLE IF NOT EXISTS leela_results ("
             "id SERIAL PRIMARY KEY,"
             "created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,"
@@ -23,10 +23,13 @@ class Database:
             "time_spent REAL NOT NULL"
             ")",
         )
-        cursor.close()
-        self.connection.commit()
+        self._connection.commit()
 
-    def close(self):
-        if self.connection is not None:
-            self.connection.close()
-        self.connection = None
+    def execute(self, query, params):
+        with self._connection:
+            self._cursor.execute(query, params)
+        return self._cursor
+
+    def __del__(self):
+        self._cursor.close()
+        self._connection.close()

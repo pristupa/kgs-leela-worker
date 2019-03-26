@@ -18,8 +18,8 @@ class Application:
         parameters = pika.URLParameters(settings['amqp_url'])
         self._amqp_channel = None
         self._amqp_connection = pika.SelectConnection(parameters, self._on_connected)
-        self._database = Database()
-        self._leela_worker = LeelaWorker(self._database.connection)
+        self._db = Database()
+        self._leela_worker = LeelaWorker(self._db)
 
     def start(self):
         try:
@@ -32,7 +32,6 @@ class Application:
             logger.info('Gracefully closing connections...')
             try:
                 # Gracefully close the connections
-                self._database.close()
                 self._amqp_connection.close()
                 # Loop until we're fully closed, will stop on its own
                 self._amqp_connection.ioloop.start()
