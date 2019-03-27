@@ -45,7 +45,7 @@ class Database:
             except psycopg2.OperationalError as exception:
                 print(f'Exception occurred: {exception}')
                 self._connection.close()
-
+                self.connect()
 
         cursor.execute(query, params)
         self._connection.commit()
