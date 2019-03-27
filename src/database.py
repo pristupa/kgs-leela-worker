@@ -42,13 +42,17 @@ class Database:
         while cursor is None:
             try:
                 cursor = self._connection.cursor()
+                cursor.execute(query, params)
+                self._connection.commit()
             except psycopg2.OperationalError as exception:
                 print(f'Exception occurred: {exception}')
+                print(query)
+                if cursor is not None:
+                    cursor.close()
+                    cursor = None
                 self._connection.close()
                 self.connect()
 
-        cursor.execute(query, params)
-        self._connection.commit()
         return Cursor(cursor)
 
     def connect(self):
