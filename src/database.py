@@ -3,16 +3,29 @@ import psycopg2
 from .settings import settings
 
 
+class Cursor:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    def __del__(self):
+        self._cursor.close()
+
+
 class Database:
     def __init__(self):
-        self._connection = psycopg2.connect(
-            host=settings['db_host'],
-            database=settings['db_name'],
-            user=settings['db_user'],
-            password=settings['db_password'],
-        )
-        self._cursor = self._connection.cursor()
-        self._cursor.execute(
+        self._connection = None
+        self.connect()
+        self.execute(
             "CREATE TABLE IF NOT EXISTS leela_results ("
             "id SERIAL PRIMARY KEY,"
             "created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,"
@@ -23,13 +36,37 @@ class Database:
             "time_spent REAL NOT NULL"
             ")",
         )
-        self._connection.commit()
 
-    def execute(self, query, params):
-        with self._connection:
-            self._cursor.execute(query, params)
-        return self._cursor
+    def execute(self, query, params=None):
+        cursor = None
+        while cursor is None:
+            try:
+                cursor = self._connection.cursor()
+            except psycopg2.OperationalError as exception:
+                print(f'Exception occurred: {exception}')
+                self._connection.close()
+
+
+        cursor.execute(query, params)
+        self._connection.commit()
+        return Cursor(cursor)
+
+    def connect(self):
+        connection = None
+        print(f"Trying to connect to {settings['db_host']}...")
+        while connection is None:
+            try:
+                connection = psycopg2.connect(
+                    host=settings['db_host'],
+                    database=settings['db_name'],
+                    user=settings['db_user'],
+                    password=settings['db_password'],
+                    connect_timeout=5,
+                )
+            except psycopg2.OperationalError as exception:
+                print(f'Failed to connect: {exception}. Trying to reconnect...')
+        print('Connected.')
+        self._connection = connection
 
     def __del__(self):
-        self._cursor.close()
         self._connection.close()
