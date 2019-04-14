@@ -69,6 +69,9 @@ class LeelaWorker:
         if cursor.rowcount == 0:
             raise GameNotFoundError()
         sgf_content, = cursor.fetchone()
+        return self._write_sgf_content(game_id, sgf_content)
+
+    def _write_sgf_content(self, game_id: int, sgf_content: bytes) -> str:
         file_descriptor, filepath = tempfile.mkstemp('.sgf')
         with open(file_descriptor, 'wb') as file:
             file.write(sgf_content)

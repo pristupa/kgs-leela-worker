@@ -8,6 +8,7 @@ import pika.channel
 from .database import Database
 from .leela_worker import GameNotFoundError
 from .leela_worker import LeelaWorker
+from .extracter_worker import ExtracterWorker
 from .logger import logger
 from .settings import settings
 
@@ -28,7 +29,7 @@ class Application:
             logger.info('Listening the queue...')
             # Loop so we can communicate with RabbitMQ
             self._amqp_connection.ioloop.start()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, SystemExit):
             logger.info('Gracefully closing connections...')
             try:
                 # Gracefully close the connections
@@ -37,6 +38,11 @@ class Application:
                 self._amqp_connection.ioloop.start()
             except Exception:
                 pass  # Fail silently
+
+    def extract(self, games_count: int):
+        logger.info(f'Extracting {games_count} games...')
+        self._leela_worker = ExtracterWorker(self._db, games_count=games_count)
+        self.start()
 
     def _handle_delivery(
             self,

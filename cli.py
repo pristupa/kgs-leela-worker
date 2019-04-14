@@ -32,5 +32,17 @@ def schedule(n: str, kilo_playouts: str):
     scheduler.schedule(n, kilo_playouts)
 
 
+@cli.command()
+@click.argument('n')
+def extract(n: str):
+    try:
+        n = int(n)
+    except ValueError:
+        n = None
+
+    application = Application()
+    application.extract(n)
+
+
 if __name__ == '__main__':
     cli()
